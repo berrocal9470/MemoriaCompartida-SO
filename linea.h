@@ -3,7 +3,7 @@
 
 typedef struct Linea
 {
-    long int pid;
+    int pid proceso;
     int estado;
 } Linea;
 

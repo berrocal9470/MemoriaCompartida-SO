@@ -7,14 +7,15 @@
 #include <stdbool.h>
 #include <semaphore.h> 
 
-#include "linea.h"
+//#include "linea.h"
 #include "proceso.h"
 
 
 // Variables globales
-Linea * mem_address;
-int * control_address; 
-sem_t mutex;
+Proceso * mem_address;
+int * control_address;
+Proceso * estados_address;
+sem_t sem_ready, sem_estados;
 
 /**
     Retorna un numero entero aleatorio entre [min, max]
@@ -25,26 +26,83 @@ int getRandom(int min, int max){
     return numero;
 }
 
+/*
+    Agrega un proceso a la memoria de procesos vivos
+    Retorna la posición donde lo metió
+*/
+int agregarProceso(Proceso * proceso){
+    // pide el semáforo
+    sem_wait(&sem_estados);
+
+    int pos = control_address[2];                   //cantidad de procesos vivos
+    estados_address[pos].pid = proceso->pid;
+    estados_address[pos].tamano = proceso->tamano;
+    estados_address[pos].tiempo = proceso->tiempo;
+    
+    control_address[2] = control_address[2] + 1;    //incremento el contador de procesos vivos
+
+    // devuelve el semáforo
+    sem_post(&sem_estados);
+
+    return pos;
+}
+
+/*
+    Elimina un proceso de la memoria de procesos vivos y reordena
+*/
+void eliminarProceso(long int idProceso){
+    // pide el semáforo
+    sem_wait(&sem_estados);
+
+    int pos=0;
+    while(estados_address[pos].pid != idProceso)
+        pos++;
+
+    for(int i=pos; i<(control_address[2]-1); i++)
+        estados_address[i] = estados_address[i+1];
+
+    control_address[2] = control_address[2] - 1;
+
+    // devuelve el semáforo
+    sem_post(&sem_estados);
+}
+
+
+//============================================================
+//                  ALGORITMOS DE ASIGNACIÓN
+//============================================================
 
 /*
     Implementa la lógica del Algoritmo First Fit
 */
 void * first_fit(void * arg){
-    struct Proceso * actual;
-    actual = (struct Proceso *)arg;
+    struct Proceso * temp;
+    temp = (struct Proceso *)arg;
+    temp->pid = pthread_self();
 
-    // guardo estos porque la referencia a los parámetros cambia en tiempo de ejecución!
-    int tamano = actual->tamano;
-    int tiempo = actual->tiempo;
+    // agrego el proceso actual a los procesos vivos
+    int pos_estado = agregarProceso(temp);
+    //guardo los valores para accederlos más facil
+    int tamano = estados_address[pos_estado].tamano;
+    int tiempo = estados_address[pos_estado].tiempo;
+    long int pid = estados_address[pos_estado].pid;
+    estados_address[pos_estado].estado = Bloqueado;
+
+    //printf("Bloqueado... ");
+    sleep(1);      //para notarlo en el espia ¡NO BORRAR!
 
     int pos = 0;
     bool ocupado;
     bool insertado = false;
 
     // pide el semáforo
-    sem_wait(&mutex);
+    sem_wait(&sem_ready);
+    estados_address[pos_estado].estado = RegionCritica;
 
-    while(pos < (control_address[0] - tamano)){        //posicion menor que el tamaño de lineas
+    //printf("RC... ");
+    sleep(1);         //para notarlo en el espia ¡NO BORRAR!
+
+    while(pos <= (control_address[0] - tamano)){        // control_address[0] = cantidad de lineas
         ocupado = false;
 
         // para saltar más rapido las que estan ocupadas
@@ -59,10 +117,9 @@ void * first_fit(void * arg){
             }
         }
 
-        if(!ocupado){
+        if(!ocupado && (pos <= control_address[0] - tamano)){
             for(int i=pos; i<(pos + tamano); i++){
-                mem_address[i].pid = pthread_self();
-                mem_address[i].estado = 0;
+                mem_address[i] = estados_address[pos_estado];
             }
             insertado = true;
             break;
@@ -70,29 +127,36 @@ void * first_fit(void * arg){
     }
 
     if(insertado){
-        printf("(%ld: tamaño %d, tiempo %d)\n", pthread_self(), tamano, tiempo);
-
         // devuelve el semáforo
-        sem_post(&mutex);
+        sem_post(&sem_ready);
+
+        estados_address[pos_estado].estado = Ejecutando;
+
+        //printf("Ejecutando...\n");
+        sleep(1);         //para notarlo en el espia ¡NO BORRAR!
+
+        printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
         
         sleep(tiempo);              // "Ejecuta"
 
         // pide el semáforo
-        sem_wait(&mutex);
+        sem_wait(&sem_ready);
 
         // devuelve los recursos
         for(int i=pos; i<(pos + tamano); i++){
             mem_address[i].pid = -1;
-            mem_address[i].estado = -1;
         }
 
     }else{
-        printf("El hilo %ld de tamaño %d, murió porque no encontró amor\n",
-                 pthread_self(), tamano);
+        printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n",
+                 pid, tamano);
     }
 
+    // elimino el proceso actual de los procesos vivos
+    eliminarProceso(pid);
+
     // devuelve el semáforo
-    sem_post(&mutex);
+    sem_post(&sem_ready);
 
     return NULL;
 }
@@ -102,22 +166,26 @@ void * first_fit(void * arg){
 int main()
 {
     //crea la llave
-    key_t llave_mem, llave_control;
+    key_t llave_mem, llave_control, llave_estados;
     llave_mem = ftok(".",'x');
     llave_control = ftok(".",'a');
+    llave_estados = ftok(".",'b');
 
     // shmget me retorna el identificador de la memoria compartida, si existe
     int mem_id = shmget(llave_mem, 0, 0666);
     int control_id = shmget(llave_control, 0, 0666);
+    int estados_id = shmget(llave_estados, 0, 0666);
 
-    if(mem_id == -1 || control_id == -1){
+    if(mem_id == -1 || control_id == -1 || estados_id == -1){
         printf("No hay acceso a la memoria compartida\n");
     }else{
         // shmat se pega a la memoria compartida
-        mem_address = (Linea*) shmat(mem_id, (void*) 0, 0);
+        mem_address = (Proceso*) shmat(mem_id, (void*) 0, 0);
         control_address = (int*) shmat(control_id, (void*) 0, 0);
+        estados_address = (Proceso*) shmat(estados_id, (void*) 0, 0);
 
-        if(mem_address == (void*)-1 || control_address == (void*)-1){
+        if(mem_address == (void*)-1 || control_address == (void*)-1 
+            || estados_address == (void*)-1){
             printf("No se puede apuntar a la memoria compartida\n");
         }else{
             int cant_lineas = control_address[0];
@@ -139,7 +207,9 @@ int main()
             }
 
             // inicializa el semáforo para hilos
-            sem_init(&mutex, 0, 1);
+            sem_init(&sem_ready, 0, 1);
+            // inicializa el semáforo para los estados
+            sem_init(&sem_estados, 0, 1);
 
             // Así debería comportarse, maomeno
             while(control_address[1] == 1){         //mientras la memoria esté viva
@@ -168,12 +238,14 @@ int main()
             }
 
 
-            // destruye el semáforo
-            sem_destroy(&mutex);
+            // destruye los semáforos
+            sem_destroy(&sem_ready);
+            sem_destroy(&sem_estados);
 
             //se despega de la memoria compartida
             shmdt(mem_address);
             shmdt(control_address);
+            shmdt(estados_address);
         }
     }
 
