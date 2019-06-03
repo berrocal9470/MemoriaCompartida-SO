@@ -163,6 +163,236 @@ void * first_fit(void * arg){
 
 
 
+void * best_fit(void * arg){
+    struct Proceso * temp;
+    temp = (struct Proceso *)arg;
+    temp->pid = pthread_self();
+
+    // agrego el proceso actual a los procesos vivos
+    int pos_estado = agregarProceso(temp);
+    //guardo los valores para accederlos más facil
+    int tamano = estados_address[pos_estado].tamano;
+    int tiempo = estados_address[pos_estado].tiempo;
+    long int pid = estados_address[pos_estado].pid;
+    estados_address[pos_estado].estado = Bloqueado;
+
+    //printf("Bloqueado... ");
+    sleep(1);      //para notarlo en el espia ¡NO BORRAR!
+
+    int pos = 0;
+    bool ocupado;
+    bool insertado = false;
+
+    // pide el semáforo
+    sem_wait(&sem_ready);
+    estados_address[pos_estado].estado = RegionCritica;
+
+    //printf("RC... ");
+    sleep(1);         //para notarlo en el espia ¡NO BORRAR!
+
+    //Valores para el Bestfit
+    int iPos = -1;
+    int fPos = -1;
+    int espacio = 0;
+
+    while(pos <= (control_address[0] - tamano)){//control_address[0] = cantidad de lineas
+        ocupado = false;
+
+        // para saltar más rapido las que estan ocupadas
+        while(mem_address[pos].pid != -1){
+            pos++;
+	}
+
+        for(int i=pos; i<(pos + tamano); i++){
+            if(mem_address[i].pid != -1){
+                ocupado = true;
+                pos = i + 1;
+                break;
+            }
+        }
+
+	if(!ocupado && (pos <= control_address[0] - tamano)){
+	    int cantEspacio = 0;
+	    int contador = pos;
+	    while(mem_address[contador].pid == -1){
+		contador = contador + 1;
+		cantEspacio = cantEspacio + 1;
+	    }
+	    if (pos>iPos && pos>fPos){
+		if(espacio == 0) {
+		    espacio = cantEspacio;
+		    iPos = pos;
+		    fPos = iPos + cantEspacio;
+		}else{ 
+		    if(cantEspacio >= tamano && cantEspacio < espacio){
+			espacio = cantEspacio;
+			iPos = pos;
+			fPos = iPos + cantEspacio;
+		    }
+		}
+	    }
+	}
+	pos = pos + 1; 
+    }
+
+    if(iPos>=0){
+	for(int i=iPos; i<(iPos + tamano); i++){
+	    mem_address[i] = estados_address[pos_estado];
+        }
+        insertado = true;
+    }
+
+    if(insertado){
+        // devuelve el semáforo
+        sem_post(&sem_ready);
+
+        estados_address[pos_estado].estado = Ejecutando;
+
+        //printf("Ejecutando...\n");
+        sleep(1);         //para notarlo en el espia ¡NO BORRAR!
+
+        printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
+        
+        sleep(tiempo);              // "Ejecuta"
+
+        // pide el semáforo
+        sem_wait(&sem_ready);
+
+        // devuelve los recursos
+        for(int i=iPos; i<(iPos + tamano); i++){
+            mem_address[i].pid = -1;
+        }
+
+    }else{
+        printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n",
+                 pid, tamano);
+    }
+
+    // elimino el proceso actual de los procesos vivos
+    eliminarProceso(pid);
+
+    // devuelve el semáforo
+    sem_post(&sem_ready);
+
+    return NULL;
+}
+
+
+void * worst_fit(void * arg){
+    struct Proceso * temp;
+    temp = (struct Proceso *)arg;
+    temp->pid = pthread_self();
+
+    // agrego el proceso actual a los procesos vivos
+    int pos_estado = agregarProceso(temp);
+    //guardo los valores para accederlos más facil
+    int tamano = estados_address[pos_estado].tamano;
+    int tiempo = estados_address[pos_estado].tiempo;
+    long int pid = estados_address[pos_estado].pid;
+    estados_address[pos_estado].estado = Bloqueado;
+
+    //printf("Bloqueado... ");
+    sleep(1);      //para notarlo en el espia ¡NO BORRAR!
+
+    int pos = 0;
+    bool ocupado;
+    bool insertado = false;
+
+    // pide el semáforo
+    sem_wait(&sem_ready);
+    estados_address[pos_estado].estado = RegionCritica;
+
+    //printf("RC... ");
+    sleep(1);         //para notarlo en el espia ¡NO BORRAR!
+    
+    //Valores para el Worstfit
+    int iPos = -1;
+    int fPos = -1;
+    int espacio = 0;
+
+    while(pos <= (control_address[0] - tamano)){//control_address[0] = cantidad de lineas
+        ocupado = false;
+
+        // para saltar más rapido las que estan ocupadas
+        while(mem_address[pos].pid != -1){
+            pos++;
+	}
+
+        for(int i=pos; i<(pos + tamano); i++){
+            if(mem_address[i].pid != -1){
+                ocupado = true;
+                pos = i + 1;
+                break;
+            }
+        }
+
+	if(!ocupado && (pos <= control_address[0] - tamano)){
+	    int cantEspacio = 0;
+	    int contador = pos;
+	    while(mem_address[contador].pid == -1){
+		contador = contador + 1;
+		cantEspacio = cantEspacio + 1;
+	    }
+	    if (pos>iPos && pos>fPos){
+		if(espacio == 0) {
+		    espacio = cantEspacio;
+		    iPos = pos;
+		    fPos = iPos + cantEspacio;
+		}else{ 
+		    if(cantEspacio >= tamano && cantEspacio > espacio){
+			espacio = cantEspacio;
+			iPos = pos;
+			fPos = iPos + cantEspacio;
+		    }
+		}
+	    }
+	}
+	pos = pos + 1; 
+    }
+
+    if(iPos>=0){
+	for(int i=iPos; i<(iPos + tamano); i++){
+	    mem_address[i] = estados_address[pos_estado];
+        }
+        insertado = true;
+    }
+
+    if(insertado){
+        // devuelve el semáforo
+        sem_post(&sem_ready);
+
+        estados_address[pos_estado].estado = Ejecutando;
+
+        //printf("Ejecutando...\n");
+        sleep(1);         //para notarlo en el espia ¡NO BORRAR!
+
+        printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
+        
+        sleep(tiempo);              // "Ejecuta"
+
+        // pide el semáforo
+        sem_wait(&sem_ready);
+
+        // devuelve los recursos
+        for(int i=iPos; i<(iPos + tamano); i++){
+            mem_address[i].pid = -1;
+        }
+
+    }else{
+        printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n",
+                 pid, tamano);
+    }
+
+    // elimino el proceso actual de los procesos vivos
+    eliminarProceso(pid);
+
+    // devuelve el semáforo
+    sem_post(&sem_ready);
+
+    return NULL;
+}
+
+
 int main()
 {
     //crea la llave
@@ -225,9 +455,11 @@ int main()
                         break;
                     case 2:
                         printf("Aplicando Best-Fit...\n");
+			pthread_create(&proceso, NULL, best_fit, (void *)&info_proceso);
                         break;
                     case 3:
                         printf("Aplicando Worst-Fit...\n");
+			pthread_create(&proceso, NULL, worst_fit, (void *)&info_proceso);
                         break;
                 }
 
