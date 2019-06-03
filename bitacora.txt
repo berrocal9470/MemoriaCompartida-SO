@@ -1,0 +1,25 @@
+03/06/2019 16:08:09: Proceso: Asignación. Hilo: 139620778796800. Filas Ocupadas:0-3. Tamaño 4. Tiempo 28
+03/06/2019 16:08:20: Proceso: Asignación. Hilo: 139620770404096. Filas Ocupadas:4-4. Tamaño 1. Tiempo 51
+03/06/2019 16:08:30: Proceso: Asignación. Hilo: 139620762011392. Filas Ocupadas:5-8. Tamaño 4. Tiempo 45
+03/06/2019 16:08:38: Proceso: Desasignación. Hilo: 139620778796800. Filas Ocupadas:0-3. Tamaño 4. Tiempo 28
+03/06/2019 16:08:42: Proceso: Defunción. El hilo 139620753618688 de tamaño 9, murió. Motivo: No encontró amor
+03/06/2019 16:08:58: Proceso: Asignación. Hilo: 139620745225984. Filas Ocupadas:0-2. Tamaño 3. Tiempo 30
+03/06/2019 16:09:12: Proceso: Desasignación. Hilo: 139620770404096. Filas Ocupadas:4-4. Tamaño 1. Tiempo 51
+03/06/2019 16:09:16: Proceso: Desasignación. Hilo: 139620762011392. Filas Ocupadas:5-8. Tamaño 4. Tiempo 45
+03/06/2019 16:09:18: Proceso: Asignación. Hilo: 139620528420608. Filas Ocupadas:3-3. Tamaño 1. Tiempo 36
+03/06/2019 16:09:29: Proceso: Desasignación. Hilo: 139620745225984. Filas Ocupadas:0-2. Tamaño 3. Tiempo 30
+03/06/2019 16:09:32: Proceso: Defunción. El hilo 139620520027904 de tamaño 8, murió. Motivo: No encontró amor
+03/06/2019 16:09:43: Proceso: Defunción. El hilo 139620511635200 de tamaño 7, murió. Motivo: No encontró amor
+03/06/2019 16:09:55: Proceso: Desasignación. Hilo: 139620528420608. Filas Ocupadas:3-3. Tamaño 1. Tiempo 36
+03/06/2019 16:09:58: Proceso: Asignación. Hilo: 139620503242496. Filas Ocupadas:0-2. Tamaño 3. Tiempo 24
+03/06/2019 16:10:08: Proceso: Asignación. Hilo: 139620494849792. Filas Ocupadas:3-4. Tamaño 2. Tiempo 26
+03/06/2019 16:10:23: Proceso: Desasignación. Hilo: 139620503242496. Filas Ocupadas:0-2. Tamaño 3. Tiempo 24
+03/06/2019 16:10:27: Proceso: Asignación. Hilo: 139620486457088. Filas Ocupadas:5-9. Tamaño 5. Tiempo 51
+03/06/2019 16:10:35: Proceso: Desasignación. Hilo: 139620494849792. Filas Ocupadas:3-4. Tamaño 2. Tiempo 26
+03/06/2019 16:10:42: Proceso: Defunción. El hilo 139620478064384 de tamaño 7, murió. Motivo: No encontró amor
+03/06/2019 16:10:56: Proceso: Defunción. El hilo 139620469671680 de tamaño 9, murió. Motivo: No encontró amor
+03/06/2019 16:11:11: Proceso: Asignación. Hilo: 139620461278976. Filas Ocupadas:0-0. Tamaño 1. Tiempo 54
+03/06/2019 16:11:19: Proceso: Desasignación. Hilo: 139620486457088. Filas Ocupadas:5-9. Tamaño 5. Tiempo 51
+03/06/2019 16:11:22: Proceso: Asignación. Hilo: 139620452886272. Filas Ocupadas:1-6. Tamaño 6. Tiempo 47
+03/06/2019 16:11:39: Proceso: Defunción. El hilo 139620444493568 de tamaño 6, murió. Motivo: No encontró amor
+03/06/2019 16:11:54: Proceso: Defunción. El hilo 139620436100864 de tamaño 7, murió. Motivo: No encontró amor

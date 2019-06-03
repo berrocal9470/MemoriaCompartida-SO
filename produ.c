@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <unistd.h>
+#include <string.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <semaphore.h> 
@@ -69,6 +71,27 @@ void eliminarProceso(long int idProceso){
 
 
 //============================================================
+//                  ALGORITMOS DE BITÁCORA
+//============================================================
+void escBitacora(const char *texto){
+	
+	time_t tiempo = time(0);
+	struct tm *tlocal = localtime(&tiempo);
+	char output[128];
+	strftime(output, 128, "%d/%m/%Y %H:%M:%S", tlocal);
+
+	FILE *f = fopen ("/home/evelio/MemoriaCompartida-SO/bitacora.txt", "a");
+	if(f == NULL){
+		printf("Error al abrir el archivo\n");
+		exit(1);
+	}
+	fprintf (f, "%s", output);
+	fprintf (f, "%s", texto);
+	fclose(f);
+}
+
+
+//============================================================
 //                  ALGORITMOS DE ASIGNACIÓN
 //============================================================
 
@@ -102,6 +125,9 @@ void * first_fit(void * arg){
     //printf("RC... ");
     sleep(1);         //para notarlo en el espia ¡NO BORRAR!
 
+    //Valores para la bitácora
+    char resultado[100];
+
     while(pos <= (control_address[0] - tamano)){        // control_address[0] = cantidad de lineas
         ocupado = false;
 
@@ -127,20 +153,27 @@ void * first_fit(void * arg){
     }
 
     if(insertado){
+	//Escribe en la bitácora
+	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, pos, pos+tamano-1, tamano, tiempo);
+	escBitacora(resultado);
         // devuelve el semáforo
         sem_post(&sem_ready);
 
         estados_address[pos_estado].estado = Ejecutando;
-
-        //printf("Ejecutando...\n");
-        sleep(1);         //para notarlo en el espia ¡NO BORRAR!
-
-        printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
         
-        sleep(tiempo);              // "Ejecuta"
+	//printf("Ejecutando...\n");
+        sleep(1);//para notarlo en el espia ¡NO BORRAR!
+	        
+	printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
+        
+        sleep(tiempo);// "Ejecuta"
 
         // pide el semáforo
         sem_wait(&sem_ready);
+
+	//Escribe en la bitácora
+	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, pos, pos+tamano-1, tamano, tiempo);
+	escBitacora(resultado);
 
         // devuelve los recursos
         for(int i=pos; i<(pos + tamano); i++){
@@ -148,8 +181,10 @@ void * first_fit(void * arg){
         }
 
     }else{
+	sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n", pid, tamano);
         printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n",
                  pid, tamano);
+	escBitacora(resultado);
     }
 
     // elimino el proceso actual de los procesos vivos
@@ -178,6 +213,14 @@ void * best_fit(void * arg){
 
     //printf("Bloqueado... ");
     sleep(1);      //para notarlo en el espia ¡NO BORRAR!
+    
+    //Valores para la bitácora
+    char resultado[100];
+
+    //Valores para el Bestfit
+    int iPos = -1;
+    int fPos = -1;
+    int espacio = 0;
 
     int pos = 0;
     bool ocupado;
@@ -189,11 +232,6 @@ void * best_fit(void * arg){
 
     //printf("RC... ");
     sleep(1);         //para notarlo en el espia ¡NO BORRAR!
-
-    //Valores para el Bestfit
-    int iPos = -1;
-    int fPos = -1;
-    int espacio = 0;
 
     while(pos <= (control_address[0] - tamano)){//control_address[0] = cantidad de lineas
         ocupado = false;
@@ -243,20 +281,26 @@ void * best_fit(void * arg){
     }
 
     if(insertado){
-        // devuelve el semáforo
+	// Escribe en bitácora
+	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, iPos, iPos+tamano-1, tamano, tiempo);
+	escBitacora(resultado);
+        
+	// devuelve el semáforo
         sem_post(&sem_ready);
 
         estados_address[pos_estado].estado = Ejecutando;
 
         //printf("Ejecutando...\n");
         sleep(1);         //para notarlo en el espia ¡NO BORRAR!
-
         printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
-        
         sleep(tiempo);              // "Ejecuta"
 
         // pide el semáforo
         sem_wait(&sem_ready);
+
+	// Escribe en bitácora
+	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, iPos, iPos+tamano-1, tamano, tiempo);
+	escBitacora(resultado);
 
         // devuelve los recursos
         for(int i=iPos; i<(iPos + tamano); i++){
@@ -264,8 +308,9 @@ void * best_fit(void * arg){
         }
 
     }else{
-        printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n",
-                 pid, tamano);
+	sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n", pid, tamano);
+        printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n", pid, tamano);
+	escBitacora(resultado);
     }
 
     // elimino el proceso actual de los procesos vivos
@@ -294,6 +339,14 @@ void * worst_fit(void * arg){
     //printf("Bloqueado... ");
     sleep(1);      //para notarlo en el espia ¡NO BORRAR!
 
+    //Valores para la bitácora
+    char resultado[100];
+
+    //Valores para el Worstfit
+    int iPos = -1;
+    int fPos = -1;
+    int espacio = 0;
+
     int pos = 0;
     bool ocupado;
     bool insertado = false;
@@ -304,11 +357,6 @@ void * worst_fit(void * arg){
 
     //printf("RC... ");
     sleep(1);         //para notarlo en el espia ¡NO BORRAR!
-    
-    //Valores para el Worstfit
-    int iPos = -1;
-    int fPos = -1;
-    int espacio = 0;
 
     while(pos <= (control_address[0] - tamano)){//control_address[0] = cantidad de lineas
         ocupado = false;
@@ -358,20 +406,27 @@ void * worst_fit(void * arg){
     }
 
     if(insertado){
+	//Escribe en bitácora
+	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, iPos, iPos+tamano-1, tamano, tiempo);
+	escBitacora(resultado);
+	
         // devuelve el semáforo
         sem_post(&sem_ready);
 
         estados_address[pos_estado].estado = Ejecutando;
 
         //printf("Ejecutando...\n");
-        sleep(1);         //para notarlo en el espia ¡NO BORRAR!
-
+        sleep(1);         //para notarlo en el espia ¡NO BORRAR! 
         printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
         
-        sleep(tiempo);              // "Ejecuta"
+	sleep(tiempo);              // "Ejecuta"
 
         // pide el semáforo
         sem_wait(&sem_ready);
+
+	//Escribe en bitácora
+	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, iPos, iPos+tamano-1, tamano, tiempo);
+	escBitacora(resultado);
 
         // devuelve los recursos
         for(int i=iPos; i<(iPos + tamano); i++){
@@ -379,8 +434,9 @@ void * worst_fit(void * arg){
         }
 
     }else{
-        printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n",
-                 pid, tamano);
+	sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n", pid, tamano);
+        printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n", pid, tamano);
+	escBitacora(resultado);
     }
 
     // elimino el proceso actual de los procesos vivos
