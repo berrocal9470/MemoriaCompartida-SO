@@ -6,6 +6,20 @@
 //#include "linea.h"
 #include "proceso.h"
 
+//============================================================
+//                  ALGORITMO DE BITÁCORA
+//============================================================
+// Crea o limmpia el archivo de bitácora
+void crearBitacora(){
+    //FILE *f = fopen ("/home/evelio/MemoriaCompartida-SO/bitacora.txt", "a");
+    FILE *f = fopen ("bitacora.txt", "w");
+    if(f == NULL){
+        printf("Error al abrir el archivo\n");
+        exit(1);
+    }
+    fclose(f);
+}
+
 int main()
 {
     int cant_lineas = 0;
@@ -52,6 +66,8 @@ int main()
                 mem_address[i].pid = -1;
                 //mem_address[i].estado = -1;
             }
+
+            crearBitacora();
 
             printf("¡Memoria compartida creada con éxito!\n");
             

@@ -71,16 +71,16 @@ void eliminarProceso(long int idProceso){
 
 
 //============================================================
-//                  ALGORITMOS DE BITÁCORA
+//                  ALGORITMO DE BITÁCORA
 //============================================================
 void escBitacora(const char *texto){
-	
 	time_t tiempo = time(0);
 	struct tm *tlocal = localtime(&tiempo);
 	char output[128];
 	strftime(output, 128, "%d/%m/%Y %H:%M:%S", tlocal);
 
-	FILE *f = fopen ("/home/evelio/MemoriaCompartida-SO/bitacora.txt", "a");
+	//FILE *f = fopen ("/home/evelio/MemoriaCompartida-SO/bitacora.txt", "a");
+    FILE *f = fopen ("bitacora.txt", "a");
 	if(f == NULL){
 		printf("Error al abrir el archivo\n");
 		exit(1);
@@ -153,27 +153,28 @@ void * first_fit(void * arg){
     }
 
     if(insertado){
-	//Escribe en la bitácora
-	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, pos, pos+tamano-1, tamano, tiempo);
-	escBitacora(resultado);
+    	//Escribe en la bitácora
+    	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, pos, pos+tamano-1, tamano, tiempo);
+    	escBitacora(resultado);
         // devuelve el semáforo
         sem_post(&sem_ready);
 
         estados_address[pos_estado].estado = Ejecutando;
         
-	//printf("Ejecutando...\n");
+	   //printf("Ejecutando...\n");
         sleep(1);//para notarlo en el espia ¡NO BORRAR!
 	        
-	printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
+        printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
         
         sleep(tiempo);// "Ejecuta"
 
         // pide el semáforo
         sem_wait(&sem_ready);
 
-	//Escribe en la bitácora
-	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, pos, pos+tamano-1, tamano, tiempo);
-	escBitacora(resultado);
+    	//Escribe en la bitácora
+    	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n",
+             pid, pos, pos+tamano-1, tamano, tiempo);
+    	escBitacora(resultado);
 
         // devuelve los recursos
         for(int i=pos; i<(pos + tamano); i++){
@@ -181,10 +182,11 @@ void * first_fit(void * arg){
         }
 
     }else{
-	sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n", pid, tamano);
+        sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n",
+             pid, tamano);
         printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n",
                  pid, tamano);
-	escBitacora(resultado);
+        escBitacora(resultado);
     }
 
     // elimino el proceso actual de los procesos vivos
@@ -239,7 +241,7 @@ void * best_fit(void * arg){
         // para saltar más rapido las que estan ocupadas
         while(mem_address[pos].pid != -1){
             pos++;
-	}
+        }
 
         for(int i=pos; i<(pos + tamano); i++){
             if(mem_address[i].pid != -1){
@@ -249,43 +251,45 @@ void * best_fit(void * arg){
             }
         }
 
-	if(!ocupado && (pos <= control_address[0] - tamano)){
-	    int cantEspacio = 0;
-	    int contador = pos;
-	    while(mem_address[contador].pid == -1){
-		contador = contador + 1;
-		cantEspacio = cantEspacio + 1;
-	    }
-	    if (pos>iPos && pos>fPos){
-		if(espacio == 0) {
-		    espacio = cantEspacio;
-		    iPos = pos;
-		    fPos = iPos + cantEspacio;
-		}else{ 
-		    if(cantEspacio >= tamano && cantEspacio < espacio){
-			espacio = cantEspacio;
-			iPos = pos;
-			fPos = iPos + cantEspacio;
-		    }
-		}
-	    }
-	}
-	pos = pos + 1; 
+        if(!ocupado && (pos <= control_address[0] - tamano)){
+    	    int cantEspacio = 0;
+    	    int contador = pos;
+    	    while(mem_address[contador].pid == -1){
+    		  contador = contador + 1;
+    		  cantEspacio = cantEspacio + 1;
+    	    }
+    	    if (pos>iPos && pos>fPos){
+        		if(espacio == 0) {
+        		    espacio = cantEspacio;
+        		    iPos = pos;
+        		    fPos = iPos + cantEspacio;
+        		}else{ 
+        		    if(cantEspacio >= tamano && cantEspacio < espacio){
+        			espacio = cantEspacio;
+        			iPos = pos;
+        			fPos = iPos + cantEspacio;
+        		    }
+        		}
+    	    }
+    	}
+
+    	pos = pos + 1; 
     }
 
     if(iPos>=0){
-	for(int i=iPos; i<(iPos + tamano); i++){
-	    mem_address[i] = estados_address[pos_estado];
+        for(int i=iPos; i<(iPos + tamano); i++){
+            mem_address[i] = estados_address[pos_estado];
         }
         insertado = true;
     }
 
     if(insertado){
-	// Escribe en bitácora
-	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, iPos, iPos+tamano-1, tamano, tiempo);
-	escBitacora(resultado);
+    	// Escribe en bitácora
+    	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n",
+             pid, iPos, iPos+tamano-1, tamano, tiempo);
+    	escBitacora(resultado);
         
-	// devuelve el semáforo
+	   // devuelve el semáforo
         sem_post(&sem_ready);
 
         estados_address[pos_estado].estado = Ejecutando;
@@ -298,9 +302,10 @@ void * best_fit(void * arg){
         // pide el semáforo
         sem_wait(&sem_ready);
 
-	// Escribe en bitácora
-	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, iPos, iPos+tamano-1, tamano, tiempo);
-	escBitacora(resultado);
+    	// Escribe en bitácora
+    	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n",
+             pid, iPos, iPos+tamano-1, tamano, tiempo);
+    	escBitacora(resultado);
 
         // devuelve los recursos
         for(int i=iPos; i<(iPos + tamano); i++){
@@ -308,9 +313,10 @@ void * best_fit(void * arg){
         }
 
     }else{
-	sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n", pid, tamano);
+        sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n",
+             pid, tamano);
         printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n", pid, tamano);
-	escBitacora(resultado);
+        escBitacora(resultado);
     }
 
     // elimino el proceso actual de los procesos vivos
@@ -364,7 +370,7 @@ void * worst_fit(void * arg){
         // para saltar más rapido las que estan ocupadas
         while(mem_address[pos].pid != -1){
             pos++;
-	}
+        }
 
         for(int i=pos; i<(pos + tamano); i++){
             if(mem_address[i].pid != -1){
@@ -374,41 +380,44 @@ void * worst_fit(void * arg){
             }
         }
 
-	if(!ocupado && (pos <= control_address[0] - tamano)){
-	    int cantEspacio = 0;
-	    int contador = pos;
-	    while(mem_address[contador].pid == -1){
-		contador = contador + 1;
-		cantEspacio = cantEspacio + 1;
-	    }
-	    if (pos>iPos && pos>fPos){
-		if(espacio == 0) {
-		    espacio = cantEspacio;
-		    iPos = pos;
-		    fPos = iPos + cantEspacio;
-		}else{ 
-		    if(cantEspacio >= tamano && cantEspacio > espacio){
-			espacio = cantEspacio;
-			iPos = pos;
-			fPos = iPos + cantEspacio;
-		    }
-		}
-	    }
-	}
-	pos = pos + 1; 
+        if(!ocupado && (pos <= control_address[0] - tamano)){
+    	    int cantEspacio = 0;
+    	    int contador = pos;
+    	    while(mem_address[contador].pid == -1){
+                contador = contador + 1;
+                cantEspacio = cantEspacio + 1;
+    	    }
+    	    if (pos>iPos && pos>fPos){
+        		if(espacio == 0) {
+        		    espacio = cantEspacio;
+        		    iPos = pos;
+        		    fPos = iPos + cantEspacio;
+        		}else{ 
+        		    if(cantEspacio >= tamano && cantEspacio > espacio){
+                        printf("aqui\n");
+                        espacio = cantEspacio;
+            			iPos = pos;
+            			fPos = iPos + cantEspacio;
+        		    }
+        		}
+    	    }
+    	}
+
+    	pos = pos + 1; 
     }
 
     if(iPos>=0){
-	for(int i=iPos; i<(iPos + tamano); i++){
-	    mem_address[i] = estados_address[pos_estado];
+        for(int i=iPos; i<(iPos + tamano); i++){
+            mem_address[i] = estados_address[pos_estado];
         }
         insertado = true;
     }
 
     if(insertado){
-	//Escribe en bitácora
-	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, iPos, iPos+tamano-1, tamano, tiempo);
-	escBitacora(resultado);
+    	//Escribe en bitácora
+    	sprintf(resultado, ": Proceso: Asignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n",
+             pid, iPos, iPos+tamano-1, tamano, tiempo);
+    	escBitacora(resultado);
 	
         // devuelve el semáforo
         sem_post(&sem_ready);
@@ -419,14 +428,15 @@ void * worst_fit(void * arg){
         sleep(1);         //para notarlo en el espia ¡NO BORRAR! 
         printf("(Entró %ld: tamaño %d, tiempo %d)\n", pid, tamano, tiempo);
         
-	sleep(tiempo);              // "Ejecuta"
+        sleep(tiempo);              // "Ejecuta"
 
         // pide el semáforo
         sem_wait(&sem_ready);
 
-	//Escribe en bitácora
-	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n", pid, iPos, iPos+tamano-1, tamano, tiempo);
-	escBitacora(resultado);
+    	//Escribe en bitácora
+    	sprintf(resultado, ": Proceso: Desasignación. Hilo: %ld. Filas Ocupadas:%d-%d. Tamaño %d. Tiempo %d\n",
+             pid, iPos, iPos+tamano-1, tamano, tiempo);
+    	escBitacora(resultado);
 
         // devuelve los recursos
         for(int i=iPos; i<(iPos + tamano); i++){
@@ -434,9 +444,9 @@ void * worst_fit(void * arg){
         }
 
     }else{
-	sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n", pid, tamano);
+        sprintf(resultado, ": Proceso: Defunción. El hilo %ld de tamaño %d, murió. Motivo: No encontró amor\n", pid, tamano);
         printf("-El hilo %ld de tamaño %d, murió porque no encontró amor\n", pid, tamano);
-	escBitacora(resultado);
+        escBitacora(resultado);
     }
 
     // elimino el proceso actual de los procesos vivos
@@ -510,17 +520,16 @@ int main()
                         pthread_create(&proceso, NULL, first_fit, (void *)&info_proceso);
                         break;
                     case 2:
-                        printf("Aplicando Best-Fit...\n");
-			pthread_create(&proceso, NULL, best_fit, (void *)&info_proceso);
+                        pthread_create(&proceso, NULL, best_fit, (void *)&info_proceso);
                         break;
                     case 3:
-                        printf("Aplicando Worst-Fit...\n");
-			pthread_create(&proceso, NULL, worst_fit, (void *)&info_proceso);
+                        pthread_create(&proceso, NULL, worst_fit, (void *)&info_proceso);
                         break;
                 }
 
 
                 int espera = getRandom(10, 20);
+                //int espera = getRandom(30, 60);
                 printf("Nuevo hilo en %d segundos\n", espera);
                 sleep(espera);
             }
